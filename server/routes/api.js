@@ -9,9 +9,8 @@ let CommentsCollection = require('../models/CommentSchema');
 
 // get all residents
 router.get('/', (req,res) => {
-    CommentsCollection.find(
-        {}, (error, result) => {
-            error ? res.send(error) : res.send(result)
+    CommentsCollection.find({}, (error, results) => {
+            error ? res.send(error) : res.send(results)
         }
     );
 });

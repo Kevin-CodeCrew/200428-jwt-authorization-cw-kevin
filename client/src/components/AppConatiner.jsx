@@ -11,16 +11,23 @@ class AppContainer extends Component {
         super(props);
         this.state = {
             token: "",
+            tokenUser: {
+                name: ""
+            }
         }
     }
 
+    // logout the user by removing the jwt token from state
     logOutUser = () => {
         this.setState({ token: "" });
     }
 
+    // TODO: Use for all subsequent requests
     // when form is submitted read user from database
     logInUser = async (token) => {
         // fetch server endpoint 
+        this.setState({ token: token });
+
         let response = await fetch('/users/verify', {
             method: "POST",
             headers: {
@@ -34,42 +41,50 @@ class AppContainer extends Component {
         //     window.alert(json.error)
         // }
         console.log(json.message);
-        this.setState({ token: json.message });
-        console.log(this.state.token);
+        this.setState({ tokenUser: json.message });
+        console.log(`THN: ${JSON.stringify(this.state)}`);
     }
 
     render() {
         if (this.state.token) {
             return (
                 <Fragment>
-                    <h1>Authentication with Passport and JSON Web Tokens</h1>
+                    <h1>Comment Manager</h1>
+                    <h4>Welcome {this.state.tokenUser.name}</h4>
                     <Router>
                         <Link to="/">Home</Link> |
                         <Link to="/" onClick={this.logOutUser}>Logout</Link> |
-                        <Link to="/comments" >Comments</Link> |
-                        <Link to="/add" >Add Comment</Link> 
-
-                        <Route path="/comments"> <ReadComments/> </Route>
-                        <Route path="/add"> <AddComment/> </Route>
+                        <Link to="/comments" >Your Comments</Link> |
+                        <Link to="/add" >Add Comment</Link>
+                        <hr size="3" />
+                        {/* <Route path="/comments"> <ReadComments /> </Route> */}
+                        <Route path="/comments" component={() => <ReadComments token={this.state.token} />} />
+                        {/* <Route path="/add"> <AddComment /> </Route> */}
+                        <Route path="/add" component={() => <AddComment token={this.state.token} tokenUser={this.state.tokenUser} />} />
                     </Router>
+
                 </Fragment>
             )
         }
-        return (
-            <Fragment>
-                <h1>Authentication with Passport and JSON Web Tokens</h1>
-                <Router>
-                    <Link to="/">Home</Link> |
-                    <Link to="/login">Login</Link> |
-                    <Link to="/register">Registration</Link> |
-                    <Link to="/comments" >Comments</Link> 
+        else {
+            return (
+                <Fragment>
+                    <h1>Comment Manager</h1>
+                    <Router>
+                        {/* <Link to="/">Home</Link> | */}
+                        <Link to="/login">Login</Link> |
+                    <Link to="/register">Registration</Link>
+                        <hr size="3" />
+                        {/* <Link to="/comments" >Comments</Link> */}
 
-                    <Route path="/comments"> <ReadComments/> </Route>
-                    <Route path="/login" component={() => <Login logInUser={this.logInUser} />} />
-                    <Route path="/register" component={Register} />
-                </Router>
-            </Fragment>
-        )
+                        {/* <Route path="/comments" component={() => <ReadComments token={this.state.token}/>} /> */}
+                        <Route path="/login" component={() => <Login logInUser={this.logInUser} />} />
+                        <Route path="/register" component={Register} />
+                    </Router>
+
+                </Fragment>
+            )
+        }
     }
 }
 export default AppContainer;

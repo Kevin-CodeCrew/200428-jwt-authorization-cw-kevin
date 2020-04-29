@@ -25,7 +25,7 @@ router.post('/register', (req, res) => {
             // if email already exists in database
             if (user) {
                 // send `already exists` message
-                res.json({error : `User with ${req.body.email} already exists`});
+                res.json({ error: `User with ${req.body.email} already exists` });
             }
             // if user does not already exist in database
             else {
@@ -41,7 +41,7 @@ router.post('/register', (req, res) => {
                         // If hash has errors send error message
                         if (error) {
                             console.log("Password has not been hashed")
-                            res.status(500).json({error : error});
+                            res.status(500).json({ error: error });
                         }
                         // if hash does not have errors
                         else {
@@ -65,7 +65,7 @@ router.post('/login', (req, res) => {
         .then(user => {
             // if email does not exist send 404 message
             if (!user) {
-                res.status(500).json({error : `User with email ${req.body.email} not found`})
+                res.status(403).json({ error: `User with email ${req.body.email} not found` })
             }
             // if user does exist
             else {
@@ -78,40 +78,112 @@ router.post('/login', (req, res) => {
                             let payload = {
                                 id: user._id,
                                 name: user.name,
+                                email:user.email
                             }
                             // create JWT using `sign()` method passing in payload
-                            jwt.sign(payload, secretKey, { expiresIn: 30 }, (error, token) => {
+                            
+                            // const accessToken = generateAccessToken(payload);
+
+                            jwt.sign(payload, secretKey, { expiresIn: 60 }, (error, token) => { // With expiry
+                                console.log(`Errors:${error} TOKEN: ${token}`);
                                 // if errors send errors, otherwise send token as object
-                                error ? res.status(404).json({error : error}) : res.json({ token: `Bearer ${token}` });
+                                error ? res.status(403).json({ error: error }) : res.json({ token: `Bearer ${token}` });
                             });
                         }
                         // if passwords don't match send 404 message
                         else {
-                            res.status(404).json({error : `User with email ${req.body.email} incorrect password`});
+                            res.status(403).json({ error: `User with email ${req.body.email} incorrect password` });
                         }
                     });
             }
         });
 });
 
+// TODO: Use something like this to secure  requests
 router.post('/verify', verifyToken, (req, res) => {
     // res.send("Secret");
     jwt.verify(req.token, secretKey, (errors, results) => {
-        errors ? res.status(500).json({error :"verification error"}) : res.json({message : results});
+        errors ? res.status(403).json({ error: "verification error" }) : res.json({ message: results });
     })
 });
-function verifyToken(req,res,next){
+
+// Verify Token
+function verifyToken(req, res, next) {
     // console.log("verify token");
     let bearerHeader = req.headers["authorization"];
-    if(bearerHeader){
-        let bearer = bearerHeader.split(' ');
+    if (bearerHeader) {
+        let bearer = bearerHeader.split(' '); // We have to split the string "Bearer sdf;;sd;flksdl;fj;sdfjsdf;sljfdsjl;fds;fdj;sd" at the space
         let bearerToken = bearer[1];
         req.token = bearerToken;
         // console.log(req.token);
         next();
     } else {
-        res.status(403).json({error : "Forbidden"});
+        res.status(403).json({ error: "Forbidden" });
     }
+}
+
+let posts = [
+    {
+        username: 'kyancy@yahoo.com',
+        title: '1st post'
+    },
+    {
+        username: 'kyancy1@yahoo.com',
+        title: '1st post'
+    },
+    {
+        username: 'kyancy1@yahoo.com',
+        title: '2nd post'
+    },
+    {
+        username: 'kyancy3@yahoo.com',
+        title: '1st post'
+    }
+]
+
+
+
+let CommentsCollection = require('../models/CommentSchema');
+
+// get all residents
+router.get('/comment', authenticateToken, (req,res) => {
+    CommentsCollection.find(
+        {commentUser : req.user.name}, (error, result) => {
+            error ? res.send(error) : res.send(result)
+        }
+    );
+});
+
+// create a resident
+router.post('/comment', authenticateToken,(req,res) => {
+    CommentsCollection.create(req.body, (error, results) => {
+        error ? res.send(error) : res.send(results)
+    });
+});
+
+router.get('/posts', authenticateToken, (req,res)=> {
+    // console.log(`USER: ${JSON.stringify(req.user)}`);
+    res.json(posts.filter((post)=> post.username === req.user.email));
+});
+
+// Authenticate Token
+function authenticateToken(req,res, next) {
+    console.log('AUTH TOKEN');
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token === null) return res.status(401);
+    // Now verify the token
+    jwt.verify(token, secretKey, (errors, user) => {
+        if (errors)  res.status(403).json({ error: "verification error" });
+        console.log(`NEWUSER: ${JSON.stringify(user)}`);
+        req.user = user;
+        next();
+    })
+}
+
+// Generate a new access token
+function generateAccessToken(user) {
+    return jwt.sign(user,secretKey, {expiresIn: '60s'});
 }
 
 module.exports = router;

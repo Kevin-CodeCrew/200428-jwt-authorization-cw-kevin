@@ -13,18 +13,16 @@ class Login extends Component {
     }
 
     // controlled component form
-    handleChange = (event) => {
-        if (event.target.name === "email") {
-            this.setState({ email: event.target.value });
-        } else if (event.target.name === "password") {
-            this.setState({ password: event.target.value });
-        }
-    }
+    // Handle changes to form fields
+    handleChange = (evt) => {
+        this.setState({ [evt.target.id]: evt.target.value });
+        // console.log(`Changed: ${evt.target.id} ${evt.target.value}`);
+    };
 
     // when form is submitted read user from database
     handleSubmission = async (event) => {
         event.preventDefault(); // keep page from reloading
-        // console.log(this.state);
+        console.log(this.state);
 
         // define object to send to post request
         let user = {
@@ -43,21 +41,21 @@ class Login extends Component {
         // pull out json from response
         let json = await response.json();
         // log json response from server
-        if(json.error){
+        console.log(json.token);
+        if (json.error) {
             window.alert(json.error)
         } else {
             this.props.logInUser(json.token);
         }
-        console.log(json.token);
+
     }
 
     // render form
     render() {
         return (
             <Fragment>
-                <h1>Login</h1>
+                <h3>Login</h3>                
                 <form>
-
                     <label htmlFor="email">Email</label>
                     <input type="text" name="email" id="email" value={this.state.email} onChange={this.handleChange} />
                     <br />

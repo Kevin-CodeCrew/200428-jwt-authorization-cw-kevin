@@ -4,7 +4,7 @@ class ReadComments extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            commentArray : [],
+            commentArray: [],
         }
     }
 
@@ -14,11 +14,26 @@ class ReadComments extends Component {
     }
 
     // get all documents from api endpoint
-    loadData = async() => {
-        const response = await fetch('/api');
+    loadData = async () => {
+        const response = await fetch('/users/comment', {
+            method: "GET",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': this.props.token
+            }
+        });
+
         const json = await response.json();
-        console.table(json);
-        this.setState({commentArray : json});
+        if (json.error) {
+            console.table(json);
+            this.setState({ commentArray: [] });
+            window.alert(json.error)
+        } else {
+            console.table(json);
+            this.setState({ commentArray: json });
+        }
+
     }
 
 
@@ -26,16 +41,20 @@ class ReadComments extends Component {
     render() {
         return (
             <div>
-                <h1>Comments</h1>
+                <h3>Your Comments</h3>
                 <div>
                     {
                         this.state.commentArray.map((comment) => {
-                            return(
-                                <div key = {comment._id}>
-                                    {comment.commentTitle} 
-                                    <br/>
-                                    {comment.commentsBody} 
-                                    <hr/>
+                            return (
+                                <div key={comment._id}>
+                                    {comment.commentUser}
+                                    <br />
+                                    {comment.commentTitle}
+                                    <br />
+                                    {comment.commentsBody}
+                                    <br />
+                                    {comment.date}
+                                    <hr />
                                 </div>
                             )
                         })
